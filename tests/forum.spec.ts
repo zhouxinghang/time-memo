@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 
 test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退出', async ({ page }, testInfo) => {
   test.skip(
@@ -54,6 +55,14 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
       ),
     })
   await expect(page.getByLabel('文章正文')).toHaveValue(/\/media\/[a-f0-9]{32}\.jpg/)
+  const heicData = readFileSync(new URL('../internal/server/testdata/quadrants.heic', import.meta.url))
+  await expect(page.getByLabel('选择文章图片')).toHaveAttribute('accept', /image\/heic/)
+  await page.getByLabel('选择文章图片').setInputFiles({
+    name: 'moment.HEIC',
+    mimeType: '',
+    buffer: heicData,
+  })
+  await expect(page.getByLabel('文章正文')).toHaveValue(/(\/media\/[a-f0-9]{32}\.jpg[\s\S]*){2}/)
   await page.getByLabel('添加标签').fill('日常，光影')
   await page.getByRole('button', { name: '预览', exact: true }).click()
   await expect(page.getByRole('heading', { name: '把平凡留住' })).toBeVisible()
@@ -61,11 +70,28 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   await expect(page.getByRole('dialog')).toContainText('无法修改或删除')
   await page.getByRole('button', { name: '确认并发布', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
-  await expect(page.locator('.article-content .markdown img')).toBeVisible()
+  const articleImages = page.locator('.article-content .markdown img')
+  await expect(articleImages).toHaveCount(2)
+  for (const img of await articleImages.all()) {
+    await expect(img).toBeVisible()
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
+  }
   await page.getByLabel('写下评论', { exact: true }).fill('愿这些微小的美好，都被好好记住。')
+  const heifData = Buffer.from(heicData)
+  heifData.write('mif1', 8, 'ascii')
+  await expect(page.getByLabel('选择评论图片')).toHaveAttribute('accept', /image\/heif/)
+  await page.getByLabel('选择评论图片').setInputFiles({
+    name: 'reply.heif',
+    mimeType: 'image/heif',
+    buffer: heifData,
+  })
+  await expect(page.getByLabel('写下评论', { exact: true })).toHaveValue(/\/media\/[a-f0-9]{32}\.jpg/)
   await page.getByRole('button', { name: '留下回应' }).click()
   await page.getByRole('button', { name: '确认发布评论' }).click()
   await expect(page.locator('.comment-list')).toContainText('愿这些微小的美好，都被好好记住。')
+  const commentImage = page.locator('.comment-list .markdown img')
+  await expect(commentImage).toBeVisible()
+  await expect.poll(() => commentImage.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
   await page.getByRole('button', { name: '收藏文章', exact: true }).click()
   await expect(page.getByRole('button', { name: '取消收藏', exact: true })).toHaveAttribute(
     'aria-pressed',

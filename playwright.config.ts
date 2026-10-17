@@ -33,7 +33,7 @@ export default defineConfig({
   ],
   webServer: e2eDatabase
     ? {
-        command: 'go run ./cmd/timememo',
+        command: 'go run -tags nodynamic ./cmd/timememo',
         url: 'http://127.0.0.1:18080/healthz',
         reuseExistingServer: false,
         env: {

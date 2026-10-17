@@ -66,6 +66,8 @@ export async function api<T>(url: string, options: RequestInit = {}): Promise<T>
   }
   return data as T
 }
+export const imageUploadAccept = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif'
+
 export async function uploadImage(file: File) {
   if (file.size > 12 * 1024 * 1024) throw new Error('图片不能超过 12 MB')
   const data = new FormData()

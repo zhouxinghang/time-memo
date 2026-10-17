@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/gen2brain/heic"
 	"golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
 )
@@ -22,17 +23,22 @@ const maxUpload = 12 << 20
 
 var imageName = regexp.MustCompile(`^[a-f0-9]{32}\.jpg$`)
 
+func init() {
+	// HEVC images in HEIF containers can also use the generic mif1 major brand.
+	image.RegisterFormat("heic", "????ftypmif1", heic.Decode, heic.DecodeConfig)
+}
+
 // compressImage decodes in memory, removes metadata and flattens transparency.
 // Only the resized, re-encoded JPEG is ever written to disk.
 func compressImage(data []byte) ([]byte, int, int, error) {
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return nil, 0, 0, fmt.Errorf("图片无法读取，请使用 JPEG、PNG 或 WebP")
+		return nil, 0, 0, fmt.Errorf("图片无法读取，请使用 JPEG、PNG、WebP 或 HEIC/HEIF")
 	}
-	if format != "jpeg" && format != "png" && format != "webp" {
-		return nil, 0, 0, fmt.Errorf("仅支持 JPEG、PNG 和 WebP")
+	if format != "jpeg" && format != "png" && format != "webp" && format != "heic" {
+		return nil, 0, 0, fmt.Errorf("仅支持 JPEG、PNG、WebP 和 HEIC/HEIF")
 	}
-	if cfg.Width < 1 || cfg.Height < 1 || int64(cfg.Width)*int64(cfg.Height) > 25_000_000 {
+	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > 25_000_000/cfg.Height {
 		return nil, 0, 0, fmt.Errorf("图片最多 2500 万像素")
 	}
 	src, _, err := image.Decode(bytes.NewReader(data))

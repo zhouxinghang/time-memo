@@ -14,7 +14,7 @@ COPY cmd ./cmd
 COPY internal ./internal
 COPY web/embed.go ./web/embed.go
 COPY --from=frontend /src/web/dist ./web/dist
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/timememo ./cmd/timememo && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/timememo-user ./cmd/timememo-user && mkdir -p /out/uploads
+RUN CGO_ENABLED=0 go build -tags nodynamic -trimpath -ldflags="-s -w" -o /out/timememo ./cmd/timememo && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/timememo-user ./cmd/timememo-user && mkdir -p /out/uploads
 
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app

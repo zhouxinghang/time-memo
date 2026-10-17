@@ -12,7 +12,15 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/App'
-import { api, dateText, relativeTime, uploadImage, type CommentList, type Post } from '@/lib/api'
+import {
+  api,
+  dateText,
+  imageUploadAccept,
+  relativeTime,
+  uploadImage,
+  type CommentList,
+  type Post,
+} from '@/lib/api'
 import { Avatar, CategoryBadge, Footer, Markdown } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -252,7 +260,7 @@ export function PostPage() {
                 tabIndex={-1}
                 ref={fileRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={imageUploadAccept}
                 aria-label="选择评论图片"
                 onChange={(e) => upload(e.target.files?.[0])}
               />

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApp } from '@/App'
-import { api, uploadImage } from '@/lib/api'
+import { api, imageUploadAccept, uploadImage } from '@/lib/api'
 import { categories, Footer, Markdown } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -247,7 +247,7 @@ export function Editor() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept={imageUploadAccept}
                 onChange={(e) => upload(e.target.files?.[0])}
                 className="sr-only"
                 tabIndex={-1}

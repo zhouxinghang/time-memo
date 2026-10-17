@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/jpeg"
 	"image/png"
 	"io"
 	"mime/multipart"
@@ -15,6 +16,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -133,39 +135,56 @@ func TestIntegration(t *testing.T) {
 	if res.StatusCode != 403 {
 		t.Fatal("cross-origin mutation not rejected")
 	}
-	// Real multipart upload; on-disk contents must be compressed JPEG, not the raw PNG.
+	// Real multipart uploads must store only re-encoded JPEGs, including for HEIC.
 	var raw bytes.Buffer
 	src := image.NewRGBA(image.Rect(0, 0, 2200, 1100))
 	src.Set(10, 10, color.White)
 	png.Encode(&raw, src)
-	var form bytes.Buffer
-	mw := multipart.NewWriter(&form)
-	part, _ := mw.CreateFormFile("image", "photo.png")
-	part.Write(raw.Bytes())
-	mw.Close()
-	upload, _ := http.NewRequest("POST", srv.URL+"/api/uploads", &form)
-	upload.Header.Set("Content-Type", mw.FormDataContentType())
-	res, err = client.Do(upload)
+	heicData, err := os.ReadFile("testdata/quadrants.heic")
 	if err != nil {
 		t.Fatal(err)
 	}
-	var img map[string]any
-	json.NewDecoder(res.Body).Decode(&img)
-	res.Body.Close()
-	if res.StatusCode != 201 {
-		t.Fatal(img)
-	}
-	mediaURL := img["url"].(string)
-	if img["width"] != float64(1920) || img["height"] != float64(960) {
-		t.Fatal(img)
-	}
-	files, _ := os.ReadDir(dir)
-	if len(files) != 1 || !strings.HasSuffix(files[0].Name(), ".jpg") {
-		t.Fatal("raw upload or temporary files left on disk")
-	}
-	disk, _ := os.ReadFile(dir + "/" + files[0].Name())
-	if !bytes.HasPrefix(disk, []byte{0xff, 0xd8}) {
-		t.Fatal("not re-encoded JPEG")
+	var mediaURL string
+	for i, input := range []struct {
+		name string
+		data []byte
+	}{{"photo.png", raw.Bytes()}, {"photo.HEIC", heicData}} {
+		var form bytes.Buffer
+		mw := multipart.NewWriter(&form)
+		part, err := mw.CreateFormFile("image", input.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		part.Write(input.data)
+		mw.Close()
+		upload, _ := http.NewRequest("POST", srv.URL+"/api/uploads", &form)
+		upload.Header.Set("Content-Type", mw.FormDataContentType())
+		res, err = client.Do(upload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var img map[string]any
+		json.NewDecoder(res.Body).Decode(&img)
+		res.Body.Close()
+		if res.StatusCode != 201 {
+			t.Fatalf("%s: %v", input.name, img)
+		}
+		mediaURL = img["url"].(string)
+		if img["width"] != float64(1920) || img["height"] != float64(960) || img["originalSize"] != float64(len(input.data)) {
+			t.Fatalf("%s: incorrect image metadata: %v", input.name, img)
+		}
+		files, err := os.ReadDir(dir)
+		if err != nil || len(files) != i+1 {
+			t.Fatal("raw upload or temporary files left on disk:", err)
+		}
+		disk, err := os.ReadFile(filepath.Join(dir, strings.TrimPrefix(mediaURL, "/media/")))
+		if err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := jpeg.DecodeConfig(bytes.NewReader(disk))
+		if err != nil || cfg.Width != 1920 || cfg.Height != 960 || img["size"] != float64(len(disk)) {
+			t.Fatalf("%s: stored file must be a resized JPEG: %v", input.name, err)
+		}
 	}
 	// Uploaded previews remain owner-only until publication.
 	otherJar, _ := cookiejar.New(nil)

@@ -7,6 +7,8 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +36,90 @@ func TestCompressImage(t *testing.T) {
 	}
 	if _, _, _, err := compressImage([]byte("<svg onload=alert(1)>")); err == nil {
 		t.Fatal("non-raster input accepted")
+	}
+}
+
+func TestCompressHEIC(t *testing.T) {
+	original, err := os.ReadFile("testdata/quadrants.heic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name     string
+		brand    string
+		rotation byte
+		width    int
+		height   int
+		topLeft  color.RGBA
+	}{
+		{"HEIC", "heic", 0, 1920, 960, color.RGBA{R: 240, G: 40, B: 30, A: 255}},
+		{"HEIF", "mif1", 0, 1920, 960, color.RGBA{R: 240, G: 40, B: 30, A: 255}},
+		{"rotated HEIC", "heic", 1, 960, 1920, color.RGBA{R: 30, G: 220, B: 40, A: 255}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			raw := bytes.Clone(original)
+			copy(raw[8:12], tt.brand)
+			rotation := bytes.Index(raw, []byte("irot"))
+			if rotation < 0 {
+				t.Fatal("fixture is missing the rotation property")
+			}
+			raw[rotation+4] = tt.rotation
+			data, w, h, err := compressImage(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if w != tt.width || h != tt.height {
+				t.Fatalf("got %dx%d, want %dx%d", w, h, tt.width, tt.height)
+			}
+			img, err := jpeg.Decode(bytes.NewReader(data))
+			if err != nil {
+				t.Fatal("HEIC must be re-encoded as JPEG:", err)
+			}
+			if img.Bounds().Dx() != w || img.Bounds().Dy() != h {
+				t.Fatal("JPEG dimensions do not match upload metadata")
+			}
+			pixel := color.RGBAModel.Convert(img.At(w/4, h/4)).(color.RGBA)
+			for i, got := range []uint8{pixel.R, pixel.G, pixel.B} {
+				want := []uint8{tt.topLeft.R, tt.topLeft.G, tt.topLeft.B}[i]
+				if delta := int(got) - int(want); delta < -30 || delta > 30 {
+					t.Fatalf("incorrect colors or orientation: got %v, want approximately %v", pixel, tt.topLeft)
+				}
+			}
+		})
+	}
+}
+
+func TestCompressHEICRejectsInvalidImages(t *testing.T) {
+	raw, err := os.ReadFile("testdata/quadrants.heic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	oversized := bytes.Clone(raw)
+	ispe := bytes.LastIndex(oversized, []byte("ispe"))
+	if ispe < 0 {
+		t.Fatal("fixture is missing the image size property")
+	}
+	binary.BigEndian.PutUint32(oversized[ispe+8:ispe+12], 6000)
+	binary.BigEndian.PutUint32(oversized[ispe+12:ispe+16], 5000)
+	if _, _, _, err := compressImage(oversized); err == nil || !strings.Contains(err.Error(), "2500 万像素") {
+		t.Fatalf("expected pixel limit rejection, got %v", err)
+	}
+	// HEIF dimensions are uint32; their product can overflow int64.
+	binary.BigEndian.PutUint32(oversized[ispe+8:ispe+12], ^uint32(0))
+	binary.BigEndian.PutUint32(oversized[ispe+12:ispe+16], ^uint32(0))
+	if _, _, _, err := compressImage(oversized); err == nil {
+		t.Fatal("overflowing image dimensions accepted")
+	}
+	broken := bytes.Clone(raw)
+	mdat := bytes.Index(broken, []byte("mdat"))
+	if mdat < 0 {
+		t.Fatal("fixture is missing the image data box")
+	}
+	broken = broken[:mdat+12] // Keep the valid header but truncate the HEVC image data.
+	for _, data := range [][]byte{raw[:12], broken} {
+		if _, _, _, err := compressImage(data); err == nil {
+			t.Fatal("malformed HEIC accepted")
+		}
 	}
 }
 

@@ -6,7 +6,7 @@ deps:
 
 build:
 	npm run build
-	go build -trimpath -o bin/timememo ./cmd/timememo
+	go build -tags nodynamic -trimpath -o bin/timememo ./cmd/timememo
 	go build -trimpath -o bin/timememo-user ./cmd/timememo-user
 
 run: build
