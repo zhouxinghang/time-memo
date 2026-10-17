@@ -116,3 +116,15 @@ tests/                浏览器端到端测试
 - 图片上传成功而草稿未发布时，图片仍归上传者可见并保留在磁盘，避免已发布内容发生悬空引用。本版不自动清理上传文件。
 - 文件系统需为应用专用目录，容器默认以非 root 用户运行。
 - 健康检查：`GET /healthz` 会检查数据库连通性。
+
+## WordPress 数据转换
+
+使用 Python 3.9+ 将 WordPress WXR 1.2 导出转成本项目的 PostgreSQL 导入 SQL：
+
+```sh
+python3 scripts/wordpress-to-sql.py /path/to/WordPress.xml --output-dir data/imports/wordpress
+```
+
+仅转换已发布文章和其已审核普通评论，所有导入文章统一归入 `archive`，输出 `import.sql`、账号映射和导入说明 `README.md`、转换报告 `report.json` 及原站图片地址清单 `media-manifest.json`。工具只生成文件；执行 SQL 前，按说明用现有用户 CLI 准备账号或修改 SQL 中的用户名映射。正文转为 Markdown，保留发布时间；同一份 SQL 与账号映射可重复执行，复用完全相同的记录，不覆盖已有内容。
+
+XML 不包含图片文件，图片暂以原站链接保留。若需要在站内显示，应在正式导入前补齐原图并通过项目图片处理流程迁移。生成数据默认建议放在已被 Git 忽略的 `data/` 下，避免私人文章随源码提交。
