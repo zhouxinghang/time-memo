@@ -9,7 +9,6 @@ import {
   Check,
   ChevronRight,
   Feather,
-  Hourglass,
   Leaf,
   MessageCircle,
   Search,
@@ -19,7 +18,7 @@ import { toast } from 'sonner'
 import { useApp } from '@/App'
 import { api, dateText, relativeTime, type Post, type PostList } from '@/lib/api'
 import { DailyNoteCard } from '@/components/daily-note'
-import { Avatar, categories, CategoryBadge, Footer } from '@/components/shared'
+import { Avatar, categories, CategoryBadge, Footer, TimeMemoIcon } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -98,7 +97,7 @@ export function Feed() {
               <div className="banner-orbit orbit-small" />
               <div className="banner-sun" />
               <div className="banner-clock">
-                <Hourglass size={50} strokeWidth={0.9} />
+                <TimeMemoIcon size={66} strokeWidth={0.9} />
               </div>
               <Leaf className="banner-leaf" size={68} strokeWidth={0.8} />
               <span>MAKE TIME A MEMORY</span>

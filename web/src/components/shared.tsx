@@ -1,5 +1,5 @@
+import { useId, type SVGProps } from 'react'
 import {
-  Hourglass,
   ArrowUpRight,
   Leaf,
   LockKeyhole,
@@ -60,11 +60,55 @@ export const categories = [
     color: 'archive',
   },
 ]
+export function TimeMemoIcon({
+  size = 24,
+  strokeWidth = 1.7,
+  className,
+  ...props
+}: Omit<SVGProps<SVGSVGElement>, 'strokeWidth'> & {
+  size?: number | string
+  strokeWidth?: number
+}) {
+  const bookMaskId = useId()
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="5 6 32 32"
+      fill="none"
+      stroke="currentColor"
+      className={cn('timememo-icon', className)}
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <defs>
+        <mask id={bookMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+          <rect width="40" height="40" fill="white" stroke="none" />
+          <circle cx="29" cy="27" r="7" fill="black" stroke="none" />
+        </mask>
+      </defs>
+      <path
+        d="M20 12C16 9 11 10 7 12v17c4-2 9-3 13 0 4-3 9-2 13 0V12c-4-2-9-3-13 0Zm0 0v17"
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+        mask={`url(#${bookMaskId})`}
+      />
+      <circle cx="29" cy="27" r="7" strokeWidth={strokeWidth * (1.5 / 1.7)} />
+      <path
+        d="M29 23v4l2.5 1.5"
+        strokeWidth={strokeWidth * (1.5 / 1.7)}
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export function Logo({ light = false }: { light?: boolean }) {
   return (
     <Link to="/" className={cn('brand', light && 'brand-light')} aria-label="时光记首页">
-      <span className="brand-symbol">
-        <Hourglass size={25} strokeWidth={1.6} />
+      <span className="brand-symbol" aria-hidden="true">
+        <TimeMemoIcon size="100%" viewBox="0 0 40 40" />
       </span>
       <span className="brand-name">
         时光记<span>TimeMemo</span>

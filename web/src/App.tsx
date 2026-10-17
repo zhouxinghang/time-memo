@@ -6,7 +6,6 @@ import {
   Bookmark,
   ChevronDown,
   Feather,
-  Hourglass,
   Leaf,
   LockKeyhole,
   LogOut,
@@ -27,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, categories, Footer, Logo } from '@/components/shared'
+import { Avatar, categories, Footer, Logo, TimeMemoIcon } from '@/components/shared'
 import { Feed, Topics } from '@/pages/Feed'
 import { Editor } from '@/pages/Editor'
 import { PostPage } from '@/pages/Post'
@@ -68,7 +67,7 @@ export default function App() {
   if (checking)
     return (
       <div className="loading-screen">
-        <Hourglass className="text-primary animate-pulse" size={30} />
+        <TimeMemoIcon className="text-primary animate-pulse" size={30} />
         <p>正在打开时光记…</p>
       </div>
     )
@@ -134,7 +133,7 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
             <div className="art-orbit orbit-three" />
             <div className="art-sun" />
             <div className="art-window">
-              <Hourglass size={88} strokeWidth={0.8} />
+              <TimeMemoIcon size={100} strokeWidth={0.8} />
               <span>TIME, WELL KEPT.</span>
             </div>
             <Leaf className="art-leaf" size={92} strokeWidth={0.7} />
@@ -338,7 +337,7 @@ function Community({ user, onLogout }: { user: User; onLogout: () => void }) {
               path="*"
               element={
                 <div className="empty-state">
-                  <Hourglass size={40} />
+                  <TimeMemoIcon size={40} />
                   <h2>这段时光还未留下记录</h2>
                   <Button asChild>
                     <Link to="/">回到时光广场</Link>
@@ -352,7 +351,7 @@ function Community({ user, onLogout }: { user: User; onLogout: () => void }) {
       <Dialog open={about} onOpenChange={setAbout}>
         <DialogContent>
           <span className="about-icon">
-            <Hourglass size={30} strokeWidth={1.3} />
+            <TimeMemoIcon size={36} strokeWidth={1.3} />
           </span>
           <DialogTitle className="dialog-title">给时光，一个落脚的地方。</DialogTitle>
           <DialogDescription className="dialog-description">
@@ -413,7 +412,7 @@ function Sidebar({ openAbout }: { openAbout: () => void }) {
         <p className="sidebar-label">我的时光</p>
         <Link to="/" className={`sidebar-link ${home && !location.search ? 'active' : ''}`}>
           <span className="nav-icon">
-            <Hourglass size={17} />
+            <TimeMemoIcon size={17} />
           </span>
           时光广场<span className="nav-count">{stats?.posts ?? '—'}</span>
         </Link>
