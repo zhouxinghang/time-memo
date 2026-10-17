@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: timememo
+      POSTGRES_USER: timememo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timememo -d timememo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DATABASE_URL: postgres://timememo@postgres:5432/timememo?sslmode=disable
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      UPLOAD_DIR: /data/uploads
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres-data:
+  uploads:

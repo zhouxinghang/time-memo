@@ -1,0 +1,12 @@
+node_modules/
+web/dist/*
+!web/dist/.gitkeep
+bin/
+data/
+.env
+*.log
+.DS_Store
+coverage.out
+playwright-report/
+test-results/
+*.tsbuildinfo
