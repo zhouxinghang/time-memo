@@ -39,6 +39,15 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   await page.getByLabel('密码', { exact: true }).fill(password)
   await page.getByRole('button', { name: '开启一段时光' }).click()
   await expect(page.getByRole('heading', { name: '记录此刻，留给时光。' })).toBeVisible()
+  if (testInfo.project.name === 'desktop') {
+    const response = await page.request.get('/api/daily-note')
+    expect(response.status()).toBe(200)
+    const note = await response.json()
+    await expect(page.locator('.today-note-content')).toHaveText(note.content)
+    await expect(page.locator('.today-note-attribution')).toHaveText('时光记')
+    await page.reload()
+    await expect(page.locator('.today-note-content')).toHaveText(note.content)
+  }
   await page.goto('/topics')
   const archiveTopic = page.locator('.topic-card').filter({ hasText: '时光旧匣' })
   await expect(archiveTopic).toContainText('安放旧日的文字，珍藏尘封的时光。')

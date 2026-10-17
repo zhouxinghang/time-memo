@@ -69,7 +69,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	h, err := New(s, Config{UploadDir: dir, Assets: fstest.MapFS{"index.html": {Data: []byte("<!doctype html>TimeMemo")}}})
+	h, err := New(s, Config{UploadDir: dir, DailyNoteSource: "builtin", Assets: fstest.MapFS{"index.html": {Data: []byte("<!doctype html>TimeMemo")}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestIntegration(t *testing.T) {
 		_ = json.Unmarshal(raw, &result)
 		return result
 	}
-	for _, p := range []string{"/api/me", "/api/posts", "/api/posts/1", "/api/posts/1/comments", "/api/stats", "/media/" + strings.Repeat("a", 32) + ".jpg"} {
+	for _, p := range []string{"/api/me", "/api/posts", "/api/posts/1", "/api/posts/1/comments", "/api/stats", "/api/daily-note", "/media/" + strings.Repeat("a", 32) + ".jpg"} {
 		request("GET", p, nil, 401)
 	}
 	request("POST", "/api/register", map[string]string{}, 404)
@@ -110,6 +110,13 @@ func TestIntegration(t *testing.T) {
 	me := request("GET", "/api/me", nil, 200)
 	if me["username"] != "alice" {
 		t.Fatal("wrong current user")
+	}
+	daily := request("GET", "/api/daily-note", nil, 200)
+	if daily["content"] == "" || daily["source"] != "时光记" || daily["nextRefreshAt"] == nil {
+		t.Fatal("daily note missing content or Beijing refresh time", daily)
+	}
+	if again := request("GET", "/api/daily-note", nil, 200); again["content"] != daily["content"] {
+		t.Fatal("daily note changes on refresh")
 	}
 	parsed, _ := url.Parse(srv.URL)
 	cookies := jar.Cookies(parsed)
@@ -262,6 +269,16 @@ func TestIntegration(t *testing.T) {
 	res.Body.Close()
 	if res.StatusCode != 200 {
 		t.Fatal("member cannot read post")
+	}
+	res, err = other.Get(srv.URL + "/api/daily-note")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var otherDaily map[string]any
+	err = json.NewDecoder(res.Body).Decode(&otherDaily)
+	res.Body.Close()
+	if err != nil || res.StatusCode != 200 || otherDaily["content"] != daily["content"] {
+		t.Fatal("members saw different daily notes", otherDaily, err)
 	}
 	res, err = other.Get(srv.URL + mediaURL)
 	if err != nil {

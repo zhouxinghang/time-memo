@@ -58,6 +58,19 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     PRIMARY KEY (user_id, post_id)
 );
 
+CREATE TABLE IF NOT EXISTS daily_notes (
+    date date PRIMARY KEY,
+    content text NOT NULL CHECK (char_length(content) BETWEEN 10 AND 40),
+    content_hash text NOT NULL CHECK (content_hash ~ '^[a-f0-9]{64}$'),
+    author text NOT NULL DEFAULT '' CHECK (char_length(author) <= 80),
+    source text NOT NULL CHECK (char_length(source) BETWEEN 1 AND 80),
+    provider text NOT NULL CHECK (provider IN ('hitokoto', 'builtin')),
+    provider_id text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    CHECK ((provider = 'builtin' AND provider_id = '') OR
+        (provider = 'hitokoto' AND provider_id ~ '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'))
+);
+
 -- Append-only policy is enforced for ordinary SQL clients as well as the HTTP API.
 CREATE OR REPLACE FUNCTION reject_content_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -67,13 +80,14 @@ $$;
 DO $$
 DECLARE table_name text;
 BEGIN
-    FOREACH table_name IN ARRAY ARRAY['posts', 'comments', 'post_images', 'comment_images', 'uploads'] LOOP
+    FOREACH table_name IN ARRAY ARRAY['posts', 'comments', 'post_images', 'comment_images', 'uploads', 'daily_notes'] LOOP
         IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = table_name || '_immutable' AND tgrelid = to_regclass(table_name)) THEN
             EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE OR DELETE OR TRUNCATE ON %I FOR EACH STATEMENT EXECUTE FUNCTION reject_content_mutation()', table_name || '_immutable', table_name);
         END IF;
     END LOOP;
 END;
 $$;
+
 INSERT INTO schema_migrations (version) VALUES (1) ON CONFLICT DO NOTHING;
 
 -- Expand the topic constraint for existing databases without changing published content.
@@ -87,3 +101,5 @@ BEGIN
     END IF;
 END;
 $$;
+
+INSERT INTO schema_migrations (version) VALUES (3) ON CONFLICT DO NOTHING;

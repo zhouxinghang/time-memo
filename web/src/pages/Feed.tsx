@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner'
 import { useApp } from '@/App'
 import { api, dateText, relativeTime, type Post, type PostList } from '@/lib/api'
+import { DailyNoteCard } from '@/components/daily-note'
 import { Avatar, categories, CategoryBadge, Footer } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import {
@@ -243,20 +244,7 @@ export function Feed() {
           )}
         </div>
         <aside className="right-sidebar">
-          <div className="today-note">
-            <div>
-              <span className="tiny-line" />
-              今日手记
-              <Leaf size={14} />
-            </div>
-            <h3>
-              生活不是我们活过的日子，
-              <br />
-              而是我们记住的日子。
-            </h3>
-            <p>把值得记住的，留在这里。</p>
-            <span className="today-date">{dateText(new Date().toISOString())}</span>
-          </div>
+          <DailyNoteCard />
           <section className="community-stats">
             <div className="right-section-heading">
               <h3>我们的小小天地</h3>

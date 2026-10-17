@@ -23,6 +23,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       UPLOAD_DIR: /data/uploads
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      DAILY_NOTE_SOURCE: ${DAILY_NOTE_SOURCE:-hitokoto}
     volumes:
       - uploads:/data/uploads
     depends_on:

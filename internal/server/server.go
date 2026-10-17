@@ -16,13 +16,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"timememo/internal/dailynote"
 	"timememo/internal/store"
 )
 
 type Config struct {
-	UploadDir    string
-	SecureCookie bool
-	Assets       fs.FS
+	UploadDir       string
+	SecureCookie    bool
+	Assets          fs.FS
+	DailyNoteSource string
 }
 type Server struct {
 	store      *store.Store
@@ -30,6 +32,7 @@ type Server struct {
 	limiter    loginLimiter
 	dummyHash  []byte
 	imageSlots chan struct{}
+	notes      *dailynote.Service
 }
 type userKey struct{}
 
@@ -41,6 +44,11 @@ func New(s *store.Store, cfg Config) (http.Handler, error) {
 		return nil, err
 	}
 	a := &Server{store: s, config: cfg, imageSlots: make(chan struct{}, 2)}
+	var err error
+	a.notes, err = dailynote.New(s.DB, cfg.DailyNoteSource)
+	if err != nil {
+		return nil, err
+	}
 	a.initAuth()
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +64,7 @@ func New(s *store.Store, cfg Config) (http.Handler, error) {
 	mux.Handle("POST /api/logout", a.auth(http.HandlerFunc(a.logout)))
 	mux.Handle("GET /api/me", a.auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { write(w, 200, currentUser(r)) })))
 	mux.Handle("GET /api/stats", a.auth(http.HandlerFunc(a.stats)))
+	mux.Handle("GET /api/daily-note", a.auth(http.HandlerFunc(a.dailyNote)))
 	mux.Handle("GET /api/posts", a.auth(http.HandlerFunc(a.listPosts)))
 	mux.Handle("POST /api/posts", a.auth(http.HandlerFunc(a.createPost)))
 	mux.Handle("GET /api/posts/{id}", a.auth(http.HandlerFunc(a.getPost)))

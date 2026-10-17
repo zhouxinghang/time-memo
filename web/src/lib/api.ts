@@ -45,6 +45,14 @@ export interface CommentList {
   page: number
   pageSize: number
 }
+export interface DailyNote {
+  date: string
+  content: string
+  author: string
+  source: string
+  sourceUrl: string
+  nextRefreshAt: string
+}
 export class ApiError extends Error {
   constructor(
     public status: number,

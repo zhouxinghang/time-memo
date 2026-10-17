@@ -28,7 +28,7 @@ func run() error {
 		return err
 	}
 	cancel()
-	handler, err := server.New(s, server.Config{UploadDir: os.Getenv("UPLOAD_DIR"), SecureCookie: os.Getenv("COOKIE_SECURE") == "true", Assets: web.Assets()})
+	handler, err := server.New(s, server.Config{UploadDir: os.Getenv("UPLOAD_DIR"), SecureCookie: os.Getenv("COOKIE_SECURE") == "true", Assets: web.Assets(), DailyNoteSource: os.Getenv("DAILY_NOTE_SOURCE")})
 	if err != nil {
 		return err
 	}

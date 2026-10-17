@@ -41,6 +41,7 @@ export default defineConfig({
           ADDR: '127.0.0.1:18080',
           UPLOAD_DIR: process.env.E2E_UPLOAD_DIR || '/tmp/timememo-e2e-uploads',
           COOKIE_SECURE: 'false',
+          DAILY_NOTE_SOURCE: 'builtin',
         },
         timeout: 60_000,
       }
