@@ -11,6 +11,7 @@ import {
   Archive,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import { Link } from 'react-router-dom'
 import type { User } from '@/lib/api'
@@ -142,7 +143,7 @@ export function Markdown({ children }: { children: string }) {
   return (
     <div className="markdown">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
           img: ({ src, alt }) =>
             typeof src === 'string' && /^\/media\/[a-f0-9]{32}\.jpg$/.test(src) ? (

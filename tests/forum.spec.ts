@@ -11,6 +11,8 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   const username = `qa_${randomBytes(6).toString('hex')}`
   const password = randomBytes(18).toString('hex')
   const title = `值得留下的一束光 ${username}`
+  const firstParagraph = '今天的阳光，刚好落在书页上。\n把这一刻，慢慢写下来。\n愿这份温暖长留。'
+  const commentBody = '愿这些微小的美好，都被好好记住。\n也愿明天，依然有光。'
   execFileSync(
     'go',
     [
@@ -63,7 +65,7 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   await page.getByLabel('文章标题').fill(title)
   await page
     .getByLabel('文章正文')
-    .fill('今天的阳光，刚好落在书页上。\n\n## 把平凡留住\n\n愿每一天，都有值得记录的小事。')
+    .fill(`${firstParagraph}\n\n## 把平凡留住\n\n愿每一天，都有值得记录的小事。`)
   await page
     .getByLabel('选择文章图片')
     .setInputFiles({
@@ -86,10 +88,20 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   await page.getByLabel('添加标签').fill('日常，光影')
   await page.getByRole('button', { name: '预览', exact: true }).click()
   await expect(page.getByRole('heading', { name: '把平凡留住' })).toBeVisible()
+  const previewParagraph = page.locator('.editor-preview .markdown > p').first()
+  await expect(previewParagraph.locator('br')).toHaveCount(2)
+  expect(await previewParagraph.innerText()).toBe(firstParagraph)
   await page.getByRole('button', { name: '发布这段时光' }).click()
   await expect(page.getByRole('dialog')).toContainText('无法修改或删除')
   await page.getByRole('button', { name: '确认并发布', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+  const publishedParagraph = page.locator('.article-content .markdown > p').first()
+  await expect(publishedParagraph.locator('br')).toHaveCount(2)
+  expect(await publishedParagraph.innerText()).toBe(firstParagraph)
+  const publishedPost = await page.request.get(
+    new URL(page.url()).pathname.replace('/posts/', '/api/posts/'),
+  )
+  expect((await publishedPost.json()).body).toContain(firstParagraph)
   await expect(page.locator('.article-category .category-badge')).toHaveText('时光旧匣')
   await expect(page.locator('.article-category .category-badge')).toHaveClass(/archive/)
   const articleImages = page.locator('.article-content .markdown img')
@@ -98,7 +110,7 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
     await expect(img).toBeVisible()
     await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
   }
-  await page.getByLabel('写下评论', { exact: true }).fill('愿这些微小的美好，都被好好记住。')
+  await page.getByLabel('写下评论', { exact: true }).fill(commentBody)
   const heifData = Buffer.from(heicData)
   heifData.write('mif1', 8, 'ascii')
   await expect(page.getByLabel('选择评论图片')).toHaveAttribute('accept', /image\/heif/)
@@ -109,8 +121,19 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   })
   await expect(page.getByLabel('写下评论', { exact: true })).toHaveValue(/\/media\/[a-f0-9]{32}\.jpg/)
   await page.getByRole('button', { name: '留下回应' }).click()
+  const commentPreview = page.locator('.comment-preview .markdown > p').first()
+  await expect(commentPreview.locator('br')).toHaveCount(1)
+  expect(await commentPreview.innerText()).toBe(commentBody)
   await page.getByRole('button', { name: '确认发布评论' }).click()
   await expect(page.locator('.comment-list')).toContainText('愿这些微小的美好，都被好好记住。')
+  const publishedComment = page.locator('.comment-list .markdown > p').first()
+  await expect(publishedComment.locator('br')).toHaveCount(1)
+  expect(await publishedComment.innerText()).toBe(commentBody)
+  await page.reload()
+  await expect(publishedParagraph.locator('br')).toHaveCount(2)
+  expect(await publishedParagraph.innerText()).toBe(firstParagraph)
+  await expect(publishedComment.locator('br')).toHaveCount(1)
+  expect(await publishedComment.innerText()).toBe(commentBody)
   const commentImage = page.locator('.comment-list .markdown img')
   await expect(commentImage).toBeVisible()
   await expect.poll(() => commentImage.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
