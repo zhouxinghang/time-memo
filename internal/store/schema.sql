@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS posts (
     author_id bigint NOT NULL REFERENCES users(id),
     title text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 120),
     body text NOT NULL CHECK (char_length(body) BETWEEN 1 AND 50000),
-    category text NOT NULL CHECK (category IN ('daily','thoughts','travel','culture','tech')),
+    category text NOT NULL CHECK (category IN ('daily','thoughts','travel','culture','tech','archive')),
     tags text[] NOT NULL DEFAULT '{}' CHECK (cardinality(tags) <= 5),
     created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -75,3 +75,15 @@ BEGIN
 END;
 $$;
 INSERT INTO schema_migrations (version) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- Expand the topic constraint for existing databases without changing published content.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM schema_migrations WHERE version = 2) THEN
+        ALTER TABLE posts DROP CONSTRAINT posts_category_check;
+        ALTER TABLE posts ADD CONSTRAINT posts_category_check
+            CHECK (category IN ('daily','thoughts','travel','culture','tech','archive'));
+        INSERT INTO schema_migrations (version) VALUES (2);
+    END IF;
+END;
+$$;

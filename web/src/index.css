@@ -16,6 +16,11 @@
   --color-input: #dfe3d9;
   --color-ring: #668370;
   --color-destructive: #b04436;
+  --color-archive-surface: #f2eee8;
+  --color-archive-border: #e0d7cc;
+  --color-archive-foreground: #716353;
+  --color-archive-muted: #76695c;
+  --color-archive-accent: #9b8872;
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Songti SC', 'STSong', serif;
@@ -346,6 +351,9 @@ a {
 .topic-dot.purple {
   background: #aa9aba;
 }
+.topic-dot.archive {
+  background: var(--color-archive-accent);
+}
 .sidebar-note {
   border: 1px solid #e2e4d7;
   background: #f0f1e7;
@@ -652,6 +660,10 @@ a {
 .category-badge.purple {
   background: #f0ebf3;
   color: #857190;
+}
+.category-badge.archive {
+  background: var(--color-archive-surface);
+  color: var(--color-archive-foreground);
 }
 .post-card-content {
   margin-top: 14px;
@@ -1139,6 +1151,22 @@ a {
   margin-top: 35px;
   color: #889675;
   font-size: 11px;
+}
+.topic-card.archive {
+  background: var(--color-archive-surface);
+  border-color: var(--color-archive-border);
+  color: var(--color-archive-foreground);
+}
+.topic-card.archive:hover {
+  border-color: var(--color-archive-accent);
+}
+.topic-card.archive .topic-card-icon {
+  color: var(--color-archive-foreground);
+  border-color: var(--color-archive-border);
+}
+.topic-card.archive p,
+.topic-card.archive > div {
+  color: var(--color-archive-muted);
 }
 .back-link {
   display: inline-flex;

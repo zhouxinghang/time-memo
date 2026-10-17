@@ -139,7 +139,7 @@ export function Feed() {
             >
               全部记录
             </button>
-            {categories.slice(0, 4).map((c) => (
+            {categories.map((c) => (
               <button
                 className={params.get('category') === c.id ? 'selected' : ''}
                 key={c.id}
@@ -427,7 +427,7 @@ export function Topics() {
         {categories.map((c) => (
           <Link to={`/?category=${c.id}`} className={`topic-card ${c.color}`} key={c.id}>
             <span className="topic-card-icon">
-              <c.icon size={28} strokeWidth={1.4} />
+              <c.icon size={28} strokeWidth={1.4} aria-hidden="true" />
             </span>
             <h2>{c.name}</h2>
             <p>{c.description}</p>

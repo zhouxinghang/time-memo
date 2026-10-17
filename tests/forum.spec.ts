@@ -39,7 +39,18 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   await page.getByLabel('密码', { exact: true }).fill(password)
   await page.getByRole('button', { name: '开启一段时光' }).click()
   await expect(page.getByRole('heading', { name: '记录此刻，留给时光。' })).toBeVisible()
+  await page.goto('/topics')
+  const archiveTopic = page.locator('.topic-card').filter({ hasText: '时光旧匣' })
+  await expect(archiveTopic).toContainText('安放旧日的文字，珍藏尘封的时光。')
+  await expect(archiveTopic).toHaveClass(/archive/)
+  await expect(archiveTopic).toHaveCSS('filter', 'none')
+  await expect(archiveTopic).toHaveCSS('background-color', 'rgb(242, 238, 232)')
+  await page.screenshot({ path: testInfo.outputPath('topics.png'), fullPage: true })
+  await archiveTopic.click()
+  await expect(page.getByRole('heading', { name: '时光旧匣' })).toBeVisible()
+  await expect(page.locator('.feed-tabs .selected')).toHaveText('时光旧匣')
   await page.getByRole('link', { name: '写一篇', exact: true }).click()
+  await page.getByLabel('这篇记录属于').selectOption({ label: '时光旧匣' })
   await page.getByLabel('文章标题').fill(title)
   await page
     .getByLabel('文章正文')
@@ -70,6 +81,8 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   await expect(page.getByRole('dialog')).toContainText('无法修改或删除')
   await page.getByRole('button', { name: '确认并发布', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+  await expect(page.locator('.article-category .category-badge')).toHaveText('时光旧匣')
+  await expect(page.locator('.article-category .category-badge')).toHaveClass(/archive/)
   const articleImages = page.locator('.article-content .markdown img')
   await expect(articleImages).toHaveCount(2)
   for (const img of await articleImages.all()) {
@@ -102,6 +115,12 @@ test('CLI 创建用户后可登录、发布图片文章、评论、收藏和退�
   ).toHaveCount(0)
   await page.getByRole('link', { name: '回到时光广场' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
+  await page.locator('.feed-tabs').getByRole('button', { name: '时光旧匣' }).click()
+  await expect(page).toHaveURL(/category=archive/)
+  await expect(page.getByRole('heading', { name: title })).toBeVisible()
+  await expect(
+    page.locator('.post-card').filter({ hasText: title }).locator('.category-badge'),
+  ).toHaveText('时光旧匣')
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,
   )

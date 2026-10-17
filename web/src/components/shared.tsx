@@ -8,6 +8,7 @@ import {
   Coffee,
   Lightbulb,
   Code2,
+  Archive,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -50,6 +51,13 @@ export const categories = [
     description: '保持好奇，分享每一个新的发现。',
     icon: Code2,
     color: 'green',
+  },
+  {
+    id: 'archive',
+    name: '时光旧匣',
+    description: '安放旧日的文字，珍藏尘封的时光。',
+    icon: Archive,
+    color: 'archive',
   },
 ]
 export function Logo({ light = false }: { light?: boolean }) {

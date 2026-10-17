@@ -225,6 +225,32 @@ func TestIntegration(t *testing.T) {
 			t.Fatal(query, result)
 		}
 	}
+	// Upgrade a populated database with the original five-topic constraint.
+	if _, err = s.DB.Exec(ctx, `ALTER TABLE posts DROP CONSTRAINT posts_category_check;
+		ALTER TABLE posts ADD CONSTRAINT posts_category_check CHECK (category IN ('daily','thoughts','travel','culture','tech'));
+		DELETE FROM schema_migrations WHERE version=2`); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err = s.Migrate(ctx); err != nil {
+			t.Fatal("archive topic migration failed:", err)
+		}
+	}
+	if existing := request("GET", path, nil, 200); existing["category"] != "daily" || existing["title"] != "秋日手记" {
+		t.Fatal("migration changed existing content:", existing)
+	}
+	archived := request("POST", "/api/posts", map[string]any{"title": "旧日来信", "body": "把曾经的文字，安放在时光旧匣。", "category": "archive"}, 201)
+	archiveID := int64(archived["id"].(float64))
+	if detail := request("GET", fmt.Sprintf("/api/posts/%d", archiveID), nil, 200); detail["category"] != "archive" {
+		t.Fatal("archive topic was not saved:", detail)
+	}
+	archiveList := request("GET", "/api/posts?category=archive", nil, 200)
+	if archiveList["total"] != float64(1) || archiveList["posts"].([]any)[0].(map[string]any)["id"] != float64(archiveID) {
+		t.Fatal("archive filter returned wrong posts:", archiveList)
+	}
+	if dailyList := request("GET", "/api/posts?category=daily", nil, 200); dailyList["total"] != float64(1) {
+		t.Fatal("archive post leaked into another topic:", dailyList)
+	}
 	request("GET", "/api/posts?q=absent", nil, 200)
 	request("GET", "/api/posts?category=private", nil, 400)
 	request("POST", "/api/posts", map[string]any{"title": "", "body": "a", "category": "daily"}, 400)
@@ -257,7 +283,8 @@ func TestIntegration(t *testing.T) {
 		}
 	}
 	stats := request("GET", "/api/stats", nil, 200)
-	if stats["members"] != float64(2) || stats["comments"] != float64(1) {
+	categoryStats := stats["categories"].(map[string]any)
+	if stats["members"] != float64(2) || stats["comments"] != float64(1) || stats["posts"] != float64(2) || categoryStats["archive"] != float64(1) {
 		t.Fatal(stats)
 	}
 	request("POST", "/api/logout", nil, 200)

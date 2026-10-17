@@ -13,7 +13,7 @@ import (
 	"timememo/internal/store"
 )
 
-var categories = map[string]bool{"daily": true, "thoughts": true, "travel": true, "culture": true, "tech": true}
+var categories = map[string]bool{"daily": true, "thoughts": true, "travel": true, "culture": true, "tech": true, "archive": true}
 var mediaPattern = regexp.MustCompile(`/media/([a-f0-9]{32}\.jpg)`)
 
 type Post struct {
