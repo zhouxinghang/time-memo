@@ -26,9 +26,9 @@ services:
       DAILY_NOTE_SOURCE: ${DAILY_NOTE_SOURCE:-hitokoto}
     volumes:
       - uploads:/data/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
 volumes:
   # postgres-data:
   uploads:
